@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>index</title>
+</head>
+<body>
+
+    <link href="https://unpkg.com/todomvc-app-css@2.1.0/index.css" rel="stylesheet"/>
+
+    <section class="todoapp">
+            <header class="header">
+                <h1>todos</h1>
+                <input class="new-todo"
+                autocomplete="off"
+                placeholder="What needs to be done?"
+                v-model="newTodo" @keyup.enter="addTodo">
+            </header>
+            <!-- main -->
+        <section class="main" >
+            <input class="toggle-all" v-model="markAll" id="toggle-all" type="checkbox">
+            <label for="toggle-all" >Mark all as complete</label>
+            
+            <ul class="todo-list">
+                <li class="todo" v-for="todo in filterTodo"  :class="{completed:todo.completed,editing:todo==editingTodo}">
+                    <div class="view">
+                        <input class="toggle" type="checkbox" v-model="todo.completed">
+                        <label @dblclick="editTodo(todo)">{{todo.title}}</label>
+                        <button class="destroy" @click="deleteTodo(todo)"></button>
+                    </div>
+                    <input v-model="todo.title"  class="edit" type="text" @keyup.enter="newValTodo" @keyup.esc="cancelEditing">
+                </li>
+            </ul>
+        </section>
+        <footer class="footer">
+            <span class="todo-count">
+            <strong>{{remainingTodo}}</strong> item left
+            </span>
+            <ul class="filters">
+                <li><a href="#" @click.prevent="visibility='all'" :class="{selected:visibility=='all'}">All</a></li>
+                <li><a href="#" @click.prevent="visibility='active'" :class="{selected:visibility=='active'}">Active</a></li>
+                <li><a href="#" @click.prevent="visibility='completed'" :class="{selected:visibility=='completed'}">Completed</a></li>
+            </ul>
+            <button class="clear-completed" @click="clearCompleted()">
+            Clear completed
+            </button>
+        </footer>
+    </section>
+    <footer class="info">
+        <p>Double-click to edit a todo</p>
+    </footer>
+
+    <script src="js/vue.js"></script>
+    <script>
+        var filters={
+            'all':function(todos){
+                return todos;
+            },
+            'active':function(todos){
+                return todos.filter(function(todo){
+                    return !todo.completed;
+                });
+            },
+            'completed':function(todos){
+                return todos.filter(function(todo){
+                    return todo.completed;
+                })
+            }
+        }
+        todos_storage={
+            fetch:function(){
+                var todos=JSON.parse(localStorage.getItem('todos')||'[]');
+                return todos;
+            },
+            save:function(todos){
+                localStorage.setItem('todos',JSON.stringify(todos));
+            }
+        }
+        new Vue({
+            el:'.todoapp',
+            data:{
+                newTodo:'',
+                visibility:'all',
+                todos:todos_storage.fetch(),
+                editingTodo:null,
+                oldValTodo:null
+            },
+            computed:{
+                filterTodo:function(){
+                    return filters[this.visibility](this.todos);
+                },
+                remainingTodo:function(){
+                    return filters.active(this.todos).length;
+                },
+                markAll: {
+                    get: function(){
+                        return this.remainingTodo==0;
+                    },
+                    set:function(value){
+                        this.todos.forEach(todo =>{
+                            todo.completed=value;
+                        })
+                    }
+                }
+            },
+            methods:{
+                deleteTodo:function(todo){
+
+                    this.todos.splice(this.todos.indexOf(todo),1);
+                },
+                addTodo:function(){
+                    if(this.newTodo!==''){
+                        this.todos.push({'title':this.newTodo,'completed':false});
+                        this.newTodo="";
+                    }
+                    
+                },
+                clearCompleted:function(){
+                    this.todos=filters.active(this.todos);
+                },
+                editTodo:function(todo){
+                    this.editingTodo=todo;
+                    this.oldValTodo=this.editingTodo.title;
+                },
+                newValTodo:function(){
+                    if(this.editingTodo.title==""){
+                        this.deleteTodo(this.editingTodo);
+                    }
+                    this.editingTodo=null;
+                    
+                },
+                cancelEditing:function(){
+                    this.editingTodo.title=this.oldValTodo;
+                    this.editingTodo=null;
+                }
+                
+            },
+            watch:{
+                todos:{
+                    handler:function(todos){
+                        todos_storage.save(todos);
+                    },
+                    deep:true
+                }
+            }
+        });
+    </script>
+    
+</body>
+</html>
